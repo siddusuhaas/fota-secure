@@ -128,6 +128,7 @@ version file is treated as `0.0.0.0`.
 | 6    | Downgrade blocked                      |
 | 7    | Insufficient disk space                |
 | 8    | Decryption failed (bad key unwrap or corrupt ciphertext) |
+| 9    | Package rejected by installer (path traversal, disallowed symlink, decompression size exceeded, or manifest/content mismatch) |
 
 ## Explicit Extension Point: Multi-Platform Support
 
