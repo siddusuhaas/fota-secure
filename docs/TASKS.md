@@ -85,9 +85,12 @@ against a real compiled binary immediately, not deferred.
 
 ## Phase 4 — CI
 
-- [ ] `.github/workflows/ci.yml`: Linux runner, install build deps
+- [x] `.github/workflows/ci.yml`: Linux runner, install build deps
       (libssl-dev, cmake, python3), build consumer, install packager deps,
       run `tests/integration_test.sh`.
+
+  Confirmed green on a real push (not just passing locally in Docker) -
+  36/36 packager tests, 20/20 integration checks.
 
   **Commit**: `Add CI pipeline`
 
