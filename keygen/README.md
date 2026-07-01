@@ -6,10 +6,20 @@ single keypair's private key outside where it's meant to live.
 
 ## Usage
 
+Use a virtualenv rather than installing `cryptography` into your global/
+system Python — this also gets you editor support (import resolution,
+type checking) for `generate_keys.py`, which will otherwise show
+unresolved-import warnings if `cryptography` isn't installed anywhere your
+editor can see it.
+
 ```
+python3 -m venv .venv
+source .venv/bin/activate  # .venv\Scripts\activate on Windows
 pip install -r keygen/requirements.txt
 python3 keygen/generate_keys.py --output-dir ./keys
 ```
+
+`.venv/` is already covered by this repo's `.gitignore`.
 
 Produces, in `--output-dir` (default `./keys`, already gitignored):
 
