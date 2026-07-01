@@ -157,6 +157,22 @@ static void test_read_installed_empty_file(const char *scratch_dir) {
     free(path);
 }
 
+static void test_write_then_read_installed_round_trip(const char *scratch_dir) {
+    char *path = join_path(scratch_dir, "written.version");
+    fota_version_t v = make_version(3, 2, 1, 0);
+
+    int write_result = fota_version_write_installed(path, &v);
+    CHECK(write_result == 0);
+
+    fota_version_t read_back;
+    fota_version_read_result_t result =
+        fota_version_read_installed(path, &read_back);
+    CHECK(result == FOTA_VERSION_READ_OK);
+    CHECK(fota_version_compare(&v, &read_back) == 0);
+
+    free(path);
+}
+
 static void test_read_installed_valid_file(const char *scratch_dir) {
     char *path = join_path(scratch_dir, "valid.version");
     write_file(path, (const uint8_t *)"2.1.0.5\n", 8); /* trailing newline */
@@ -317,6 +333,7 @@ int main(int argc, char **argv) {
     test_read_installed_valid_file(scratch_dir);
     test_read_installed_malformed_file(scratch_dir);
     test_read_installed_oversized_file(scratch_dir);
+    test_write_then_read_installed_round_trip(scratch_dir);
 
     test_read_secret_hash_missing(scratch_dir);
     test_read_secret_hash_wrong_size(scratch_dir);

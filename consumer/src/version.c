@@ -125,6 +125,34 @@ fota_version_read_result_t fota_version_read_installed(const char *path,
     return FOTA_VERSION_READ_OK;
 }
 
+int fota_version_write_installed(const char *path,
+                                  const fota_version_t *version) {
+    if (path == NULL || version == NULL) {
+        return -1;
+    }
+
+    char buf[64];
+    int written = snprintf(buf, sizeof(buf), "%u.%u.%u.%u\n",
+                            (unsigned int)version->parts[0],
+                            (unsigned int)version->parts[1],
+                            (unsigned int)version->parts[2],
+                            (unsigned int)version->parts[3]);
+    if (written < 0 || (size_t)written >= sizeof(buf)) {
+        return -1;
+    }
+
+    FILE *fp = fopen(path, "wb");
+    if (fp == NULL) {
+        return -1;
+    }
+    size_t written_bytes = fwrite(buf, 1, (size_t)written, fp);
+    int close_ok = (fclose(fp) == 0);
+    if (written_bytes != (size_t)written || !close_ok) {
+        return -1;
+    }
+    return 0;
+}
+
 fota_secret_hash_read_result_t fota_version_read_downgrade_secret_hash(
     const char *path, uint8_t out_hash[FOTA_DOWNGRADE_SECRET_HASH_SIZE]) {
     if (path == NULL || out_hash == NULL) {

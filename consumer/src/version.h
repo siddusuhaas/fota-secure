@@ -47,6 +47,13 @@ typedef enum {
 fota_version_read_result_t fota_version_read_installed(const char *path,
                                                          fota_version_t *out);
 
+/* Writes version to path as "a.b.c.d\n", overwriting any existing
+ * content. Called after a successful install so the next invocation's
+ * fota_version_read_installed sees the new version - without this,
+ * downgrade protection would compare against the same stale version
+ * forever. Returns 0 on success, -1 on any I/O failure. */
+int fota_version_write_installed(const char *path, const fota_version_t *version);
+
 /* -1 if a < b, 0 if a == b, 1 if a > b. Lexicographic
  * component-by-component numeric comparison (not a string comparison -
  * "10.0.0.0" must compare greater than "2.0.0.0"). */
