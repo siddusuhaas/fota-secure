@@ -110,6 +110,47 @@ the target, complicates error handling (parsing exit codes/stderr instead of
 checking library return values), and is generally discouraged for
 production cryptographic code.
 
+### 9. Tarball extraction rejects path traversal and symlink entries
+
+A signature-verified, decrypted package still contains an attacker-shaped
+tar archive that the installer must extract to disk - trusting the
+*signature* doesn't mean trusting every internal filename or entry type.
+Tar extraction is a classic vulnerability class ("tar-slip", similar to
+zip-slip): an entry named e.g. `../../etc/passwd`, or a symlink entry
+pointing outside the install directory, can escape the intended install
+path and overwrite arbitrary files if extracted naively.
+
+fota-secure's consumer defends against this at the tar-parsing layer,
+before any filesystem write is attempted:
+
+- Every entry's path is checked lexically (no filesystem access) for an
+  absolute path or a `..` path component anywhere, and rejected if found.
+- Symlink entries (and any tar entry type other than plain files and
+  directories - hardlinks, device nodes, GNU/PAX extension headers) are
+  rejected outright, unconditionally. This project's own packager never
+  produces symlinks in a firmware bundle, so there's no legitimate case
+  to distinguish "safe" from "unsafe" symlinks - simply refusing all of
+  them removes the vulnerability class entirely rather than trying to
+  validate symlink targets.
+- The entire archive is parsed and validated (paths, entry types,
+  per-file manifest hashes) in memory before any file is written - a
+  package that fails validation for any reason leaves no partial install
+  on disk.
+
+### 10. Decompression is bounded against resource-exhaustion ("decompression bomb")
+
+A verified signature also doesn't mean the compressed payload is
+reasonably sized once decompressed: a small ciphertext can still decrypt
+to a small but highly-compressible gzip stream that inflates to an
+enormous size, exhausting device memory/storage before extraction even
+gets to look at file contents - a threat to the "Device availability"
+asset (see Assets, above), distinct from the tar-parsing integrity
+concerns in item 9. The consumer's gzip decompression step enforces a
+maximum output size (`FOTA_INSTALLER_MAX_DECOMPRESSED_SIZE`, 512 MiB by
+default) and aborts before allocating past it, rather than inflating an
+unbounded amount of attacker-influenced data first and checking
+afterward.
+
 ## Explicitly Out of Scope for v1
 
 - **Transport security** (TLS, etc.) for however the package is delivered to
