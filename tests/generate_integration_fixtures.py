@@ -99,9 +99,18 @@ def main() -> int:
         [sys.executable, str(KEYGEN_SCRIPT), "--output-dir", str(keys_dir)],
         check=True, capture_output=True, text=True,
     )
+    # A second, unrelated device keypair - never provisioned onto the
+    # "device" in integration_test.sh - used only to build
+    # wrong_device_key.bin below.
+    other_keys_dir = out / "other_keys"
+    subprocess.run(
+        [sys.executable, str(KEYGEN_SCRIPT), "--output-dir", str(other_keys_dir)],
+        check=True, capture_output=True, text=True,
+    )
 
     signing_private = crypto.load_private_key(keys_dir / "signing_private.pem")
     device_public = crypto.load_public_key(keys_dir / "device_public.pem")
+    other_device_public = crypto.load_public_key(other_keys_dir / "device_public.pem")
 
     # --- valid_v1.bin: platform=GENERIC, fw_version=1.0.0.0 ---
     tar_v1 = _real_tarball("1.0.0.0", "GENERIC")
@@ -156,6 +165,18 @@ def main() -> int:
         malicious_tar, signing_private, device_public,
     )
     (out / "path_traversal.bin").write_bytes(path_traversal)
+
+    # --- wrong_device_key.bin: genuinely valid signature and wrapped key,
+    # but wrapped for a *different* device's public key - the signing
+    # side did nothing wrong, this device's private key just isn't the
+    # one this package was ever meant for. Exercises exit 8 (decryption
+    # failed) without needing to forge anything - real signature, real
+    # wrap, just the wrong recipient. ---
+    wrong_device_key = _build_package(
+        "GENERIC", "1.0.0.0", crypto.generate_iv(), crypto.generate_aes_key(),
+        tar_v1, signing_private, other_device_public,
+    )
+    (out / "wrong_device_key.bin").write_bytes(wrong_device_key)
 
     print(f"fixtures written to {out}")
     return 0

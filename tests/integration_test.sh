@@ -91,6 +91,25 @@ check_exit_code "wrong platform tag -> exit 4" 4 "$code"
 code=$(run_consumer "$FIXTURES_DIR/path_traversal.bin")
 check_exit_code "validly-signed but path-traversal payload -> exit 9 (installer rejects)" 9 "$code"
 
+# Truncated/corrupt blob, per docs/TASKS.md's Phase 3 negative cases.
+# Truncating anywhere - even just the header - fails the length check
+# before any crypto is attempted, since header/wrapped_key/signature all
+# have to be fully present before signature verification can even run.
+head -c 30 "$FIXTURES_DIR/valid_v1.bin" > "$WORK_DIR/truncated.bin"
+code=$(run_consumer "$WORK_DIR/truncated.bin")
+check_exit_code "truncated blob (30 bytes, shorter than the fixed header) -> exit 3" 3 "$code"
+
+# Genuinely valid signature and wrapped key, but wrapped for a different
+# device's public key than the one provisioned locally - signature
+# verification succeeds (nothing about the package itself is corrupt),
+# but unwrapping the AES key with this device's private key fails. This
+# is the "corrupt blob" -> exit 8 half of docs/TASKS.md's Phase 3 case:
+# in this verify-then-decrypt architecture, truncation/tampering of the
+# package itself is always caught upstream (exit 3 or 5, see above) -
+# exit 8 is reached only via a real key mismatch, not corruption.
+code=$(run_consumer "$FIXTURES_DIR/wrong_device_key.bin")
+check_exit_code "valid signature, wrapped for a different device's key -> exit 8" 8 "$code"
+
 remaining=$(find "$INSTALL_DIR" -type f | wc -l)
 check_condition "no files installed after any negative case" "$([ "$remaining" -eq 0 ] && echo true || echo false)"
 
