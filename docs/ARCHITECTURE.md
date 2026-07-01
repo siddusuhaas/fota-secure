@@ -76,7 +76,7 @@ deliberately more portable than being wired into any one host's layout.
 5. `crypto.generate_iv()` → fresh random 16-byte IV.
 6. `crypto.encrypt_payload(tarball_bytes, key, iv)` → AES-256-CBC ciphertext.
 7. `crypto.wrap_key(aes_key, device_pubkey)` → RSA-OAEP ciphertext of the key.
-8. `blob.build_header(platform, fw_version, iv, wrapped_key_len)` → 40-byte
+8. `blob.build_header(platform, fw_version, iv, wrapped_key_len)` → 51-byte
    header per spec.
 9. `crypto.sign(header + wrapped_key + ciphertext, signing_privkey)` →
    256-byte signature.
@@ -99,7 +99,7 @@ consumer/
 └── src/
     ├── main.c           # entrypoint, arg parsing, orchestration
     ├── config.h          # platform tag, install paths — single edit point for v1
-    ├── header.c/h        # parse + validate the 40-byte fixed header
+    ├── header.c/h        # parse + validate the 51-byte fixed header
     ├── fcrypto.c/h        # RSA-OAEP unwrap, RSA verify, AES-CBC decrypt (libcrypto)
     ├── installer.c/h      # extract tarball, verify per-file manifest hashes, install
     └── version.c/h        # version file read + comparison + downgrade secret check

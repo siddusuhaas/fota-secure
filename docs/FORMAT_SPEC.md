@@ -19,15 +19,15 @@ must implement this spec exactly for interoperability.
 ## High-Level Layout
 
 ```
-[ fixed_header : 40 bytes ]
+[ fixed_header : 51 bytes ]
 [ wrapped_key  : variable, RSA-OAEP ciphertext of a fresh AES-256 key ]
 [ signature    : 256 bytes, RSA-2048 PKCS#1v1.5 SHA-256 ]
 [ payload      : AES-256-CBC ciphertext of the firmware tarball ]
 ```
 
-Total size = 40 + wrapped_key_len + 256 + payload_len.
+Total size = 51 + wrapped_key_len + 256 + payload_len.
 
-## Fixed Header (40 bytes, packed, big-endian for multi-byte ints)
+## Fixed Header (51 bytes, packed, big-endian for multi-byte ints)
 
 | Offset | Size | Field              | Description                                                   |
 |--------|------|---------------------|----------------------------------------------------------------|
@@ -38,11 +38,10 @@ Total size = 40 + wrapped_key_len + 256 + payload_len.
 | 33     | 2    | `wrapped_key_len`   | uint16, length in bytes of the `wrapped_key` section that follows |
 | 35     | 16   | `iv`                | AES-CBC initialization vector, generated fresh per build (never zero, never reused) |
 
-Note: 5 + 16 + 12 + 2 + 16 = wait, recompute layout precisely in implementation;
-the table above is authoritative for field order and semantics. Implementers
-must compute exact byte offsets from cumulative field sizes, pack with no
-implicit padding (use explicit struct packing / `struct.pack` with `!` or `<`
-format strings, not compiler-default alignment).
+Note: fields are packed back-to-back with no implicit padding (use explicit
+struct packing / `struct.pack` with `!` or `<` format strings, not
+compiler-default alignment) — 4 + 1 + 16 + 12 + 2 + 16 = 51 bytes total,
+matching the offsets above.
 
 ## Wrapped Key Section (variable length)
 

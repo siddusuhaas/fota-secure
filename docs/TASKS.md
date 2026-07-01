@@ -42,7 +42,7 @@ before moving to the next.
 
 ## Phase 2 — Consumer (C), buildable and unit-testable independently
 
-- [ ] `consumer/src/header.c/h`: parse + validate the 40-byte header. Unit
+- [ ] `consumer/src/header.c/h`: parse + validate the 51-byte header. Unit
       test with a hand-crafted valid header and a few malformed ones (bad
       magic, truncated).
 - [ ] `consumer/src/fcrypto.c/h`: libcrypto wrappers — RSA-OAEP unwrap,
