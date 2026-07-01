@@ -14,7 +14,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
-CONSUMER_BIN="$WORK_DIR/fota-secure-consumer"
+BUILD_DIR="$WORK_DIR/build"
+CONSUMER_BIN="$BUILD_DIR/fota-secure-consumer"
 FIXTURES_DIR="$WORK_DIR/fixtures"
 
 VERSION_FILE="/etc/fota-secure/version"
@@ -57,12 +58,9 @@ run_consumer() {
     set -e
 }
 
-echo "=== building consumer binary ==="
-gcc -std=c11 -Wall -Wextra -Werror -O2 \
-    "$REPO_ROOT/consumer/src/main.c" "$REPO_ROOT/consumer/src/header.c" \
-    "$REPO_ROOT/consumer/src/fcrypto.c" "$REPO_ROOT/consumer/src/version.c" \
-    "$REPO_ROOT/consumer/src/installer.c" \
-    -lcrypto -lz -o "$CONSUMER_BIN"
+echo "=== building consumer binary via CMake ==="
+cmake -S "$REPO_ROOT/consumer" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
+cmake --build "$BUILD_DIR"
 
 echo "=== installing packager + generating real packages ==="
 python3 -m venv "$WORK_DIR/venv"
