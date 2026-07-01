@@ -7,10 +7,10 @@ before moving to the next.
 
 ## Phase 0 — Scaffolding
 
-- [ ] Repo skeleton: directories per `docs/ARCHITECTURE.md` module layout.
-- [ ] `.gitignore`: exclude `*.pem`, `*.key`, `__pycache__/`, `build/`,
+- [x] Repo skeleton: directories per `docs/ARCHITECTURE.md` module layout.
+- [x] `.gitignore`: exclude `*.pem`, `*.key`, `__pycache__/`, `build/`,
       any generated test keys or blobs.
-- [ ] `keygen/generate_keys.sh` (or `.py`) — generates two RSA-2048 keypairs
+- [x] `keygen/generate_keys.sh` (or `.py`) — generates two RSA-2048 keypairs
       (signing pair, device encryption pair) into a local `keys/` dir that's
       gitignored. `keygen/README.md` explains what each keypair is for and
       that private keys must never be committed (link `docs/THREAT_MODEL.md`).
@@ -19,19 +19,19 @@ before moving to the next.
 
 ## Phase 1 — Packager (Python), standalone-testable
 
-- [ ] `packager/fota_secure/manifest.py`: build manifest dict (platform,
+- [x] `packager/fota_secure/manifest.py`: build manifest dict (platform,
       version, build date, git commit, per-file SHA-256). Unit test with a
       small fixture directory.
-- [ ] `packager/fota_secure/tarball.py`: stage files + manifest.json, produce
+- [x] `packager/fota_secure/tarball.py`: stage files + manifest.json, produce
       `.tar.gz` bytes. Unit test: round-trip (build tarball, extract, compare
       contents).
-- [ ] `packager/fota_secure/crypto.py`: AES key gen, IV gen, AES-256-CBC
+- [x] `packager/fota_secure/crypto.py`: AES key gen, IV gen, AES-256-CBC
       encrypt, RSA-OAEP wrap, RSA sign. Unit test each function against known
       test vectors or simple round-trips (encrypt then decrypt with the same
       key gives back the original bytes, etc).
-- [ ] `packager/fota_secure/blob.py`: header packing per `FORMAT_SPEC.md`,
+- [x] `packager/fota_secure/blob.py`: header packing per `FORMAT_SPEC.md`,
       full blob assembly. Unit test: pack header, unpack it, fields match.
-- [ ] `packager/fota_secure/cli.py`: wire it all together behind argparse.
+- [x] `packager/fota_secure/cli.py`: wire it all together behind argparse.
       Manual test: run against a dummy firmware directory, confirm a
       plausible-looking output file is produced (right size, magic bytes
       correct when inspected with `xxd`/`hexdump`).
@@ -42,23 +42,23 @@ before moving to the next.
 
 ## Phase 2 — Consumer (C), buildable and unit-testable independently
 
-- [ ] `consumer/src/header.c/h`: parse + validate the 51-byte header. Unit
+- [x] `consumer/src/header.c/h`: parse + validate the 51-byte header. Unit
       test with a hand-crafted valid header and a few malformed ones (bad
       magic, truncated).
-- [ ] `consumer/src/fcrypto.c/h`: libcrypto wrappers — RSA-OAEP unwrap,
+- [x] `consumer/src/fcrypto.c/h`: libcrypto wrappers — RSA-OAEP unwrap,
       RSA signature verify, AES-256-CBC decrypt. Unit test against
       known-good test vectors (can generate these using the packager's
       crypto.py against a test keypair, then hardcode the *test* vectors,
       not real keys, into a test fixture).
-- [ ] `consumer/src/version.c/h`: version file read, tuple comparison,
+- [x] `consumer/src/version.c/h`: version file read, tuple comparison,
       downgrade secret check. Unit test various comparison cases.
-- [ ] `consumer/src/installer.c/h`: tarball extraction, per-file manifest
+- [x] `consumer/src/installer.c/h`: tarball extraction, per-file manifest
       hash verification, install-path placement. Test against a known-good
       tarball fixture.
-- [ ] `consumer/src/main.c`: orchestrate the full flow per
+- [x] `consumer/src/main.c`: orchestrate the full flow per
       `docs/ARCHITECTURE.md`'s consumer flow section. Wire exit codes per
       `FORMAT_SPEC.md`.
-- [ ] `consumer/CMakeLists.txt`: build target, link `-lcrypto`.
+- [x] `consumer/CMakeLists.txt`: build target, link `-lcrypto`.
 
   **Commit(s)**: one per module roughly matches Phase 1's granularity —
   `Add header parsing + validation`, `Add crypto verify/decrypt (libcrypto)`,
@@ -67,11 +67,16 @@ before moving to the next.
 
 ## Phase 3 — Integration
 
-- [ ] `tests/integration_test.sh`: generate throwaway keypairs → package a
+Landed early, folded into Phase 2's `main.c` commit rather than as a
+separate phase - the full end-to-end integration test was written
+alongside `main.c`'s orchestration so exit-code wiring could be verified
+against a real compiled binary immediately, not deferred.
+
+- [x] `tests/integration_test.sh`: generate throwaway keypairs → package a
       dummy firmware dir with `packager` → feed the blob into the built
       `consumer` binary → assert exit code 0, assert files landed in the
       expected install path with correct contents.
-- [ ] Negative test cases in the same script or a sibling one: tampered
+- [x] Negative test cases in the same script or a sibling one: tampered
       signature → expect exit 5; wrong platform tag → expect exit 4;
       downgrade attempt without secret → expect exit 6; truncated/corrupt
       blob → expect exit 3 or 8 as appropriate.
