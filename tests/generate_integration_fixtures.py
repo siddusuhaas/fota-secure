@@ -18,6 +18,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import subprocess
 import sys
 import tarfile
@@ -69,6 +70,31 @@ def _real_tarball(fw_version: str, platform: str) -> bytes:
             info = tarfile.TarInfo(name=path)
             info.size = len(data)
             tar.addfile(info, io.BytesIO(data))
+        manifest_bytes = json.dumps(files_manifest, indent=2).encode("utf-8")
+        info = tarfile.TarInfo(name="manifest.json")
+        info.size = len(manifest_bytes)
+        tar.addfile(info, io.BytesIO(manifest_bytes))
+    return buf.getvalue()
+
+
+def _large_tarball(fw_version: str, platform: str, size_bytes: int) -> bytes:
+    # Random (incompressible) content, so gzip can't shrink the payload
+    # back down below the deliberately tiny disk-space test target -
+    # a real firmware image isn't going to compress away to nothing
+    # either.
+    data = os.urandom(size_bytes)
+    files_manifest = {
+        "platform": platform,
+        "fw_version": fw_version,
+        "build_date_utc": "2026-07-01T00:00:00Z",
+        "git_commit": "unknown",
+        "files": [{"path": "big.bin", "sha256": hashlib.sha256(data).hexdigest()}],
+    }
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz", format=tarfile.USTAR_FORMAT) as tar:
+        info = tarfile.TarInfo(name="big.bin")
+        info.size = len(data)
+        tar.addfile(info, io.BytesIO(data))
         manifest_bytes = json.dumps(files_manifest, indent=2).encode("utf-8")
         info = tarfile.TarInfo(name="manifest.json")
         info.size = len(manifest_bytes)
@@ -177,6 +203,19 @@ def main() -> int:
         tar_v1, signing_private, other_device_public,
     )
     (out / "wrong_device_key.bin").write_bytes(wrong_device_key)
+
+    # --- large_payload.bin: genuinely valid package, but with a 2 MiB
+    # incompressible payload - used to trigger exit 7 (insufficient disk
+    # space) against a deliberately tiny tmpfs install target.
+    # fw_version 3.0.0.0 is higher than anything else in this fixture
+    # set, so it isn't itself blocked by downgrade protection regardless
+    # of what's installed by the time this test runs. ---
+    tar_large = _large_tarball("3.0.0.0", "GENERIC", 2 * 1024 * 1024)
+    large_payload = _build_package(
+        "GENERIC", "3.0.0.0", crypto.generate_iv(), crypto.generate_aes_key(),
+        tar_large, signing_private, device_public,
+    )
+    (out / "large_payload.bin").write_bytes(large_payload)
 
     print(f"fixtures written to {out}")
     return 0

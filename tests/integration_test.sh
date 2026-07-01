@@ -177,6 +177,24 @@ code=$(run_consumer "$FIXTURES_DIR/valid_v1.bin" "definitely-the-wrong-secret")
 check_exit_code "downgrade attempt with wrong secret -> exit 6" 6 "$code"
 
 echo
+echo "=== insufficient disk space ==="
+
+# The consumer's disk-space pre-check (statvfs on the fixed install
+# path in config.h) is otherwise never exercised - a real filesystem is
+# never actually short of a few hundred KB. Mount a deliberately tiny
+# tmpfs directly onto the install path so the check has something to
+# fail against. large_payload.bin's 2 MiB incompressible payload
+# guarantees the check trips regardless of tmpfs block-size rounding.
+# fw_version 3.0.0.0 is higher than anything installed so far, so this
+# reaches the disk-space check rather than being blocked as a downgrade.
+mount -t tmpfs -o size=64k tmpfs "$INSTALL_DIR"
+
+code=$(run_consumer "$FIXTURES_DIR/large_payload.bin")
+check_exit_code "2 MiB payload, 64 KiB tmpfs install target -> exit 7 (insufficient disk space)" 7 "$code"
+
+umount "$INSTALL_DIR"
+
+echo
 echo "================================"
 echo "$pass_count passed, $fail_count failed"
 if [ "$fail_count" -ne 0 ]; then
