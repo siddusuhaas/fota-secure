@@ -1,2 +1,24 @@
+# Hidden files/dirs are ignored by default; explicit exceptions below for
+# what actually needs to be tracked.
 .*
 !.gitignore
+!.github
+!.github/**
+
+# Key material — private keys must never be committed (see docs/THREAT_MODEL.md #2)
+keys/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+venv/
+
+# C build output
+build/
+
+# Test-generated blobs/fixtures
+tests/tmp/
+*.bin
