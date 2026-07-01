@@ -43,6 +43,14 @@ struct packing / `struct.pack` with `!` or `<` format strings, not
 compiler-default alignment) — 4 + 1 + 16 + 12 + 2 + 16 = 51 bytes total,
 matching the offsets above.
 
+Note on `platform_tag`: at its full 16-byte length there is no room left
+for a NUL terminator (e.g. a 16-character tag fills the field exactly).
+Consumer-side code must treat this field as a fixed-length byte buffer —
+compare with `memcmp`/`strncmp` against an explicit 16-byte length — and
+must never treat it as a NUL-terminated C string (e.g. never pass it
+directly to `strcmp`/`strlen`), since a full-length tag would read past
+the field into `fw_version` looking for a terminator.
+
 ## Wrapped Key Section (variable length)
 
 - The packager generates a fresh random AES-256 key for every build.
